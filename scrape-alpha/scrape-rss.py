@@ -1,27 +1,48 @@
-##imports - add functionality beyond base python.  you might have to do a pip install to get this running https://docs.python.org/3/reference/import.html
-import requests # for pulling data https://www.w3schools.com/python/module_requests.asp
-# We are not binding the module name, but going through the list of identifiers
-from bs4 import BeautifulSoup #https://docs.python.org/2.0/ref/import.html
-#import csv # this is to export a csv.  not as useful if this is serverless but a good local export
+import requests # pulling data
+from bs4 import BeautifulSoup # xml parsing
+import json # exporting to files
 
-#create settings area
-#rsstarget='https://aws.amazon.com/about-aws/whats-new/recent/feed/'
-
-
-# original from Corey Schafer https://www.youtube.com/watch?v=ng2o98k983k
-#source = requests.get('http://coreyms.com').text
-
-#20201107-1148 do i need this in codeburst.io version?
-#soup = BeautifulSoup(source, 'lxml')
+# save function
+def save_function(article_list):
+    with open('articles.txt', 'w') as outfile:
+        json.dump(article_list, outfile)
 
 # scraping function
-def hackernews_rss('https://news.ycombinator.com/rss'):
+def hackernews_rss():
+    article_list = []
+
     try:
-        r = requests.get()
-        return print('The scraping job succeeded: ', r.status_code)
+        # execute my request, parse the data using XML
+        # parser in BS4
+        r = requests.get('https://aws.amazon.com/about-aws/whats-new/recent/feed/')
+        soup = BeautifulSoup(r.content, features='xml')
+
+        # select only the "items" I want from the data
+        articles = soup.findAll('item')
+
+        # for each "item" I want, parse it into a list
+        for a in articles:
+            title = a.find('title').text
+            link = a.find('link').text
+            published = a.find('pubDate').text
+
+            # create an "article" object with the data
+            # from each "item"
+            article = {
+                'title': title,
+                'link': link,
+                'published': published
+                }
+
+            # append my "article_list" with each "article" object
+            article_list.append(article)
+        
+        # after the loop, dump my saved objects into a .txt file
+        return save_function(article_list)
     except Exception as e:
-        print('The scraping job failed. See exception: ')
+        print('The scraping job failed. See exception:')
         print(e)
+
 print('Starting scraping')
 hackernews_rss()
 print('Finished scraping')
